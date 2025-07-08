@@ -1,0 +1,65 @@
+import cv2
+import os
+from pathlib import Path
+
+# Source video folders
+real_video_path = Path("G:/Dataset/Final_Dataset/real")
+fake_video_path = Path("G:/Dataset/Final_Dataset/fake")
+
+# Output frame folders
+real_frame_path = Path("G:/Dataset/Final_Dataset/frames/real")
+fake_frame_path = Path("G:/Dataset/Final_Dataset/frames/fake")
+
+# Create output directories
+real_frame_path.mkdir(parents=True, exist_ok=True)
+fake_frame_path.mkdir(parents=True, exist_ok=True)
+
+# Max frames per video
+MAX_FRAMES = 30
+
+# Helper function to extract frames
+def extract_frames_from_video(video_path, output_dir, prefix):
+    cap = cv2.VideoCapture(str(video_path))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_interval = max(1, total_frames // MAX_FRAMES)
+    
+    count = 0
+    frame_id = 0
+    while cap.isOpened() and count < MAX_FRAMES:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if frame_id % frame_interval == 0:
+            filename = f"{prefix}_frame_{count:02d}.jpg"
+            cv2.imwrite(str(output_dir / filename), frame)
+            count += 1
+        frame_id += 1
+    cap.release()
+
+# Extract real video frames
+print("Extracting real video frames...")
+for i, video in enumerate(sorted(real_video_path.glob("*.mp4"))):
+    prefix = f"real_{i:05d}"
+    extract_frames_from_video(video, real_frame_path, prefix)
+print("Real frames extraction complete.")
+
+# Extract fake video frames
+print("Extracting fake video frames...")
+for i, video in enumerate(sorted(fake_video_path.glob("*.mp4"))):
+    prefix = f"fake_{i:05d}"
+    extract_frames_from_video(video, fake_frame_path, prefix)
+print("Fake frames extraction complete.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
