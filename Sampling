@@ -1,0 +1,60 @@
+import os
+import shutil
+import random
+from pathlib import Path
+# Set seed for reproducibility
+random.seed(42)
+# Paths for fake video sources
+dfd_fake_path = Path("G:/Dataset/DFD_manipulated_sequences")
+celebdf_fake_path = Path("G:/Dataset/CelebDF/Celeb-synthesis")
+ff_fake_paths = [
+    Path("G:/Dataset/FaceForensic++/NeuralTextures_manipulated_sequences"),
+    Path("G:/Dataset/FaceForensic++/FaceSwap_manipulated_sequences"),
+    Path("G:/Dataset/FaceForensic++/Face2Face_manipulated_sequences"),
+    Path("G:/Dataset/FaceForensic++/DF_manipulated_sequences")
+]
+# Paths for real videos
+dfd_real_path = Path("G:/Dataset/DFD_original sequences")
+celebdf_real_paths = [
+    Path("G:/Dataset/CelebDF/Celeb-real"),
+    Path("G:/Dataset/CelebDF/YouTube-real")
+]
+ff_real_path = Path("G:/Dataset/FaceForensic++/FF_original sequences")
+# Output directories
+base_output = Path("G:/Dataset/Final_Dataset")
+real_output = base_output / "real"
+fake_output = base_output / "fake"
+# Create output folders
+real_output.mkdir(parents=True, exist_ok=True)
+fake_output.mkdir(parents=True, exist_ok=True)
+# Helper to copy videos
+def copy_random_videos(file_list, target_dir, count):
+    sampled = random.sample(file_list, min(count, len(file_list)))
+    for src in sampled:
+        shutil.copy(src, target_dir)
+    print(f"Copied {len(sampled)} videos to {target_dir}")
+    return len(sampled)
+
+# Step 1: Collect fake video paths
+dfd_fake_videos = list(dfd_fake_path.glob("*.mp4"))
+celebdf_fake_videos = list(celebdf_fake_path.glob("*.mp4"))
+ff_fake_videos = []
+for folder in ff_fake_paths:
+    ff_fake_videos.extend(folder.glob("*.mp4"))
+
+# Step 2: Proportional Sampling and Copy
+copy_random_videos(dfd_fake_videos, fake_output, 645)
+copy_random_videos(celebdf_fake_videos, fake_output, 741)
+copy_random_videos(ff_fake_videos, fake_output, 170)
+
+# Step 1: Collect real video paths
+dfd_real_videos = list(dfd_real_path.glob("*.mp4"))
+celebdf_real_videos = []
+for folder in celebdf_real_paths:
+    celebdf_real_videos.extend(folder.glob("*.mp4"))
+ff_real_videos = list(ff_real_path.glob("*.mp4"))
+
+ # Step 2: Proportional Sampling and Copy
+copy_random_videos(dfd_real_videos, real_output, 300)
+copy_random_videos(celebdf_real_videos, real_output, 809)
+copy_random_videos(ff_real_videos, real_output, 400
