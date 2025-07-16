@@ -1,0 +1,80 @@
+#Creating CSV file next
+import pandas as pd
+from pathlib import Path
+# Frame folders
+real_frames = Path("G:/Dataset/Final_Dataset/frames/real")
+fake_frames = Path("G:/Dataset/Final_Dataset/frames/fake")
+# Collect all frame paths and labels
+data = []
+
+for frame_path in real_frames.glob("*.jpg"):
+    data.append([str(frame_path), 0])  # 0 for real
+
+for frame_path in fake_frames.glob("*.jpg"):
+    data.append([str(frame_path), 1])  # 1 for fake
+# Create DataFrame
+df = pd.DataFrame(data, columns=["path", "label"])
+# Shuffle dataset
+df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+# Save to CSV
+csv_path = "G:/Dataset/Final_Dataset/frames/frame_labels.csv"
+df.to_csv(csv_path, index=False)
+
+print(f"CSV saved to {csv_path}")
+print(df.head())
+print(f"Total images: {len(df)} | Real: {df['label'].value_counts()[0]} | Fake: {df['label'].value_counts()[1]}")
+#creating labels with id of csv file
+import pandas as pd
+
+# Load your existing CSV ( face images with just path and label)
+csv_path = "G:/Dataset/Final_Dataset/frames/frame_labels.csv"
+df = pd.read_csv(csv_path)
+
+# Extract video_id from filenames
+df["video_id"] = df["path"].apply(lambda x: x.split("/")[-1].split("_")[0])
+
+# Save updated CSV
+df.to_csv("G:/Dataset/Final_Dataset/frames/labels_with_id.csv", index=False)
+#creating sequence id
+import os
+import pandas as pd
+from collections import defaultdict
+# Paths to frames images
+real_path = "G:/Dataset/Final_Dataset/frames/real"
+fake_path = "G:/Dataset/Final_Dataset/frames/fake"
+
+def collect_sequences(folder_path, label):
+    data = defaultdict(list)
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".jpg"):
+            video_id = "_".join(filename.split("_")[:2])  # e.g., vid001_frame_0.jpg -> vid001_frame
+            data[video_id].append(os.path.join(folder_path, filename))
+# Filter to only 30-frame sequences
+    valid_sequences = []
+    for vid, frames in data.items():
+        if len(frames) == 30:
+            frames.sort()  # Ensure consistent order
+            for frame in frames:
+                valid_sequences.append([frame, label, vid])
+    return valid_sequences
+
+real_data = collect_sequences(real_path, 0)
+fake_data = collect_sequences(fake_path, 1)
+
+combined = real_data + fake_data
+df = pd.DataFrame(combined, columns=["path", "label", "video_id"])
+df.to_csv("G:/Dataset/Final_Dataset/frames/sequence_labels.csv", index=False)
+print(f"Saved {len(df['video_id'].unique())} valid sequences.")
+df = pd.read_csv("G:/Dataset/Final_Dataset/frames/sequence_labels.csv")
+print("Valid sequences:", df['video_id'].nunique())
+print("Class balance:", df.groupby('label')['video_id'].nunique())
+import pandas as pd
+
+df = pd.read_csv("G:/Dataset/Final_Dataset/frames/sequence_labels.csv")  # path to your CSV
+sequence_counts = df.groupby("video_id").size()
+valid_sequences = sequence_counts[sequence_counts == 30]
+print("Valid sequences (30 frames per video):", len(valid_sequences))
+
+# Optional: Check class distribution
+df_valid = df[df['video_id'].isin(valid_sequences.index)]
+print("Label distribution in valid sequences:", df_valid.groupby('label')['video_id'].nunique())
