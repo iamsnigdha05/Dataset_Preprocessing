@@ -1,0 +1,121 @@
+
+#real dataset using CPU
+import os
+import cv2
+import numpy as np
+from tqdm import tqdm
+import face_alignment
+# Initialize face alignment (2D landmarks, CPU/GPU based on availability)
+fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, flip_input=False, device='cpu')
+# Input and output base directories
+input_base = "G:/Dataset/Final_Dataset/frames/cropped_faces"
+output_base = "G:/Dataset/Final_Dataset/frames/aligned_faces"
+# Create output dirs for both real and fake
+os.makedirs(os.path.join(output_base, "real"), exist_ok=True)
+os.makedirs(os.path.join(output_base, "fake"), exist_ok=True)
+# Align face using eye centers
+def align_face(img):
+    preds = fa.get_landmarks(img)
+    if preds is None:
+        return None
+    left_eye = np.mean(preds[0][36:42], axis=0)
+    right_eye = np.mean(preds[0][42:48], axis=0)
+    dy, dx = right_eye[1] - left_eye[1], right_eye[0] - left_eye[0]
+    angle = np.degrees(np.arctan2(dy, dx))
+    eye_center = ((left_eye[0] + right_eye[0]) / 2, (left_eye[1] + right_eye[1]) / 2)
+    rot_mat = cv2.getRotationMatrix2D(eye_center, angle, scale=1)
+    aligned = cv2.warpAffine(img, rot_mat, (img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
+    return aligned
+# Process both real and fake
+for label in ["real"]:
+    input_dir = os.path.join(input_base, label)
+    output_dir = os.path.join(output_base, label)
+    for file in tqdm(os.listdir(input_dir), desc=f"Aligning {label} faces"):
+        input_path = os.path.join(input_dir, file)
+        try:
+            img = cv2.imread(input_path)
+            aligned = align_face(img)
+            if aligned is not None:
+                cv2.imwrite(os.path.join(output_dir, file), aligned)
+            else:
+                print(f"No landmarks: {file}")
+        except Exception as e:
+            print(f"Error on {file}: {e}")
+
+
+#fake dataset using GPU(you can also use CPU with batch process , so cpu won't overload )
+import os
+import cv2
+import numpy as np
+from tqdm import tqdm
+import face_alignment
+import gc
+import time
+# ---------- Config ----------
+batch_size = 500
+device = 'cuda'  # Use NVIDIA GPU (MX230)
+input_dir = "G:/Dataset/Final_Dataset/frames/cropped_faces/fake"
+output_dir = "G:/Dataset/Final_Dataset/frames/aligned_faces/fake"
+os.makedirs(output_dir, exist_ok=True)
+# ---------- Initialize Face Alignment ----------
+fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, flip_input=False, device=device)
+# ---------- Align Face Function ----------
+def align_face(img):
+    preds = fa.get_landmarks(img)
+    if preds is None:
+        return None
+    left_eye = np.mean(preds[0][36:42], axis=0)
+    right_eye = np.mean(preds[0][42:48], axis=0)
+    dy, dx = right_eye[1] - left_eye[1], right_eye[0] - left_eye[0]
+    angle = np.degrees(np.arctan2(dy, dx))
+    eye_center = ((left_eye[0] + right_eye[0]) / 2, (left_eye[1] + right_eye[1]) / 2)
+    rot_mat = cv2.getRotationMatrix2D(eye_center, angle, scale=1)
+    aligned = cv2.warpAffine(img, rot_mat, (img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
+    return aligned
+# ---------- Load File List ----------
+all_files = sorted(os.listdir(input_dir)) 
+total_files = len(all_files)
+num_batches = (total_files + batch_size - 1) // batch_size
+
+print(f"Total images: {total_files}")
+print(f"Batch size: {batch_size}, Total batches: {num_batches}")
+# ---------- Process in Batches ----------
+for batch_num in range(num_batches):
+    start_idx = batch_num * batch_size
+    end_idx = min(start_idx + batch_size, total_files)
+    batch_files = all_files[start_idx:end_idx]
+
+    print(f"\nBatch {batch_num + 1}/{num_batches} — Files {start_idx} to {end_idx - 1}")
+
+    for file in tqdm(batch_files, desc="Aligning fake faces"):
+        input_path = os.path.join(input_dir, file)
+        output_path = os.path.join(output_dir, file)
+
+        if os.path.exists(output_path):
+            continue  # Skip already aligned
+
+        try:
+            img = cv2.imread(input_path)
+            if img is None:
+                print(f"Could not read: {file}")
+                continue
+
+            aligned = align_face(img)
+            if aligned is not None:
+                cv2.imwrite(output_path, aligned)
+            else:
+                print(f"No landmarks found: {file}")
+
+        except Exception as e:
+            print(f"Error processing {file}: {e}")
+
+        finally:
+            # Free memory safely
+            if 'img' in locals(): del img
+            if 'aligned' in locals(): del aligned
+            gc.collect()
+            
+print(f"Finished batch {batch_num + 1}/{num_batches}")
+      # Optional: small pause between batches
+
+print("\nAll fake face images aligned successfully using GPU!")
