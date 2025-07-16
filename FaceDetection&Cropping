@@ -1,0 +1,82 @@
+!pip install mtcnn
+from mtcnn import MTCNN
+#Imports
+from mtcnn import MTCNN
+from PIL import Image
+import cv2
+import os
+import numpy as np
+from tqdm import tqdm
+#Initialize MTCNN face detector
+detector = MTCNN()
+#Define input and output directories
+input_dir = "G:/Dataset/Final_Dataset/frames/fake"  # Change to "real" if needed
+output_dir = "G:/Dataset/Final_Dataset/frames/cropped_faces/fake"
+os.makedirs(output_dir, exist_ok=True)
+#Process all images
+for filename in tqdm(os.listdir(input_dir), desc="Cropping faces"):
+    img_path = os.path.join(input_dir, filename)
+    
+    try:
+        # Open and convert image
+        image = Image.open(img_path).convert('RGB')
+        frame = np.array(image)
+        
+        #Detect face
+        results = detector.detect_faces(frame)
+        
+        if results:
+            x, y, width, height = results[0]['box']
+            x, y = max(0, x), max(0, y)
+            face = frame[y:y+height, x:x+width]
+            
+            #Save face crop
+            save_path = os.path.join(output_dir, filename)
+            cv2.imwrite(save_path, cv2.cvtColor(face, cv2.COLOR_RGB2BGR))
+        else:
+            print(f"No face detected: {filename}")
+    
+    except Exception as e:
+        print(f"Error processing {filename}: {e}")
+
+#for real data next
+!pip install mtcnn
+from mtcnn import MTCNN
+#Imports
+from mtcnn import MTCNN
+from PIL import Image
+import cv2
+import os
+import numpy as np
+from tqdm import tqdm
+#Initialize MTCNN face detector
+detector = MTCNN()
+#Define input and output directories
+input_dir = "G:/Dataset/Final_Dataset/frames/real"  # Change to "real" if needed
+output_dir = "G:/Dataset/Final_Dataset/frames/cropped_faces/real"
+os.makedirs(output_dir, exist_ok=True)
+#Process all images
+for filename in tqdm(os.listdir(input_dir), desc="Cropping faces"):
+    img_path = os.path.join(input_dir, filename)
+    
+    try:
+        # Open and convert image
+        image = Image.open(img_path).convert('RGB')
+        frame = np.array(image)
+        
+        #Detect face
+        results = detector.detect_faces(frame)
+        
+        if results:
+            x, y, width, height = results[0]['box']
+            x, y = max(0, x), max(0, y)
+            face = frame[y:y+height, x:x+width]
+            
+            #Save face crop
+            save_path = os.path.join(output_dir, filename)
+            cv2.imwrite(save_path, cv2.cvtColor(face, cv2.COLOR_RGB2BGR))
+        else:
+            print(f"No face detected: {filename}")
+    
+    except Exception as e:
+        print(f"Error processing {filename}: {e}")
